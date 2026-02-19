@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🌙 مسابقة رمضان 2026 - الإصدار الإداري</title>
+    <title>🌙 مسابقة رمضان 2026 - النسخة الاحترافية</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
@@ -12,70 +12,80 @@
     
     <style>
         :root { --gold: #f1c40f; --danger: #e74c3c; --success: #2ecc71; --dark: #0b1a20; --white: rgba(255,255,255,0.98); }
-        body { margin: 0; font-family: 'Cairo', sans-serif; background: radial-gradient(circle, #1b3a44, #0b1a20); color: white; direction: rtl; min-height: 100vh; overflow-x: hidden; }
-        .map-container { display: flex; flex-direction: column; align-items: center; padding: 40px 0 160px 0; gap: 20px; }
+        body { margin: 0; font-family: 'Cairo', sans-serif; background: radial-gradient(circle, #1b3a44, #0b1a20); color: white; direction: rtl; min-height: 100vh; }
+        
+        /* خريطة المراحل */
+        .map-container { display: flex; flex-direction: column; align-items: center; padding: 40px 0 160px 0; gap: 25px; }
         .row { display: flex; gap: 15px; justify-content: center; width: 100%; }
-        .node { width: 45px; height: 45px; background: #2c3e50; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border: 3px solid #1a252f; transition: 0.3s; }
+        .node { width: 50px; height: 50px; background: #2c3e50; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; cursor: pointer; border: 3px solid #1a252f; transition: 0.3s; }
         .node.active { background: var(--gold); border-color: #fff; color: #000; box-shadow: 0 0 15px var(--gold); }
         .node.locked { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
-        .card { background: var(--white); color: #333; padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2000; box-shadow: 0 10px 40px rgba(0,0,0,0.5); overflow-y: auto; max-height: 90vh; }
+        
+        /* الهلال النهائي */
+        .moon-node { width: 80px; height: 80px; border-radius: 50%; box-shadow: 15px 8px 0 0 var(--gold); transform: rotate(-20deg); margin: 30px 0; cursor: pointer; filter: grayscale(1); opacity: 0.3; transition: 0.5s; }
+        .moon-node.active { filter: grayscale(0); opacity: 1; }
+
+        /* الكروت */
+        .card { background: var(--white); color: #333; padding: 25px; border-radius: 20px; width: 90%; max-width: 400px; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2000; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
         .hidden { display: none !important; }
-        button { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: none; font-family: 'Cairo'; font-weight: bold; cursor: pointer; }
-        input, select { width: 100%; padding: 10px; margin: 5px 0; border-radius: 8px; border: 1px solid #ddd; box-sizing: border-box; }
-        .buzzer { background: var(--danger); color: white; width: 120px; height: 120px; border-radius: 50%; font-size: 1.2em; border: 8px solid rgba(255,255,255,0.2); margin: 20px auto; display: block; animation: pulse 1.5s infinite; }
+        
+        button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: none; font-family: 'Cairo'; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        input, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 10px; border: 1px solid #ddd; box-sizing: border-box; }
+        
+        /* تحسين صندوق الخيارات للجوال */
+        #optBox { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+        #optBox button { margin: 0; background: #f8f9fa; border: 2px solid #eee; color: #2c3e50; }
+        #optBox button:active { background: #e9ecef; transform: scale(0.98); }
+
+        /* البازر */
+        .buzzer { background: var(--danger); color: white; width: 140px; height: 140px; border-radius: 50%; font-size: 1.3em; border: 8px solid rgba(255,255,255,0.2); margin: 20px auto; display: block; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        .footer-lb { position: fixed; bottom: 0; width: 100%; background: #000; padding: 10px 0; display: flex; justify-content: space-around; border-top: 2px solid var(--gold); z-index: 1000; font-size: 0.8em; }
-        .admin-section { background: #f1f2f6; padding: 10px; border-radius: 10px; margin-bottom: 10px; border: 1px solid #dfe4ea; color: #2f3542; }
+        
+        /* الترتيب السفلي */
+        .footer-lb { position: fixed; bottom: 0; width: 100%; background: #000; padding: 10px 0; display: flex; justify-content: space-around; border-top: 2px solid var(--gold); z-index: 1000; }
+        .team-s { font-size: 0.8em; text-align: center; }
+        .dead { color: #ff4757; text-decoration: line-through; }
     </style>
 </head>
 <body>
 
-<div id="adminLink" style="position:fixed; top:0; left:0; width:60px; height:60px; opacity:0; z-index:9999;" onclick="onAdminHit()"></div>
+<div id="adminLink" style="position:fixed; top:0; left:0; width:50px; height:50px; opacity:0; z-index:9999;" onclick="onAdminHit()"></div>
 
 <div class="map-container" id="map">
-    <div id="hilaal" class="moon-node" style="width:60px; height:60px; border-radius:50%; box-shadow: 12px 6px 0 0 var(--gold); transform: rotate(-20deg); opacity: 0.2;" onclick="openLvl(21)"></div>
+    <div id="hilaal" class="moon-node" onclick="openLvl(21)"></div>
 </div>
 
 <div id="login" class="card">
-    <h2 style="text-align:center;">🌙 دخول المسابقة</h2>
+    <h2 style="text-align:center; color:#2c3e50;">🌙 مسابقة رمضان</h2>
     <input id="uName" placeholder="الاسم الثلاثي">
     <select id="uTeam">
         <option value="فريق 1">فريق 1</option><option value="فريق 2">فريق 2</option>
         <option value="فريق 3">فريق 3</option><option value="فريق 4">فريق 4</option>
     </select>
-    <button onclick="entry()" style="background:var(--gold);">تسجيل ودخول</button>
+    <button onclick="entry()" style="background:var(--gold);">دخول المسابقة</button>
 </div>
 
 <div id="quizPanel" class="card hidden">
-    <div id="buzMsg" style="font-weight:bold; color:var(--danger); text-align:center; min-height:30px;"></div>
-    <div style="width:100%; height:6px; background:#eee; border-radius:3px; margin:10px 0;"><div id="tBar" style="width:100%; height:100%; background:var(--danger); transition: 0.1s linear;"></div></div>
-    <h3 id="qDisp" style="text-align:center;">انتظر السؤال...</h3>
+    <div id="buzMsg" style="font-weight:bold; color:var(--danger); text-align:center; min-height:40px;"></div>
+    <div style="width:100%; height:8px; background:#eee; border-radius:4px; margin:10px 0;">
+        <div id="tBar" style="width:100%; height:100%; background:var(--danger); transition: 0.1s linear;"></div>
+    </div>
+    <h3 id="qDisp" style="text-align:center;">جاري انتظار السؤال...</h3>
     <button id="buzBtn" class="buzzer" onclick="hitBuzzer()">إجابة! ⚡</button>
     <div id="optBox" class="hidden"></div>
 </div>
 
 <div id="adminPanel" class="card hidden">
-    <h3 style="margin-top:0; color:#2f3542;">⚙️ لوحة التحكم</h3>
-    
-    <div class="admin-section">
-        <p style="margin:0; font-weight:bold; border-bottom:1px solid #ccc;">👥 المتسابقون حالياً:</p>
-        <div id="playersList" style="font-size:0.75em; padding-top:5px; max-height:100px; overflow-y:auto;"></div>
-    </div>
-
-    <div class="admin-section" style="background:#fee2e2;">
-        <p style="margin:0; font-weight:bold; color:#b91c1c;">🔻 الخصم السريع:</p>
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px; margin-top:5px;" id="penaltyButtons"></div>
-    </div>
-
+    <h3>⚙️ إدارة المرحلة <span id="lvlTitle"></span></h3>
     <input id="qIn" placeholder="نص السؤال">
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px;">
-        <input id="o1" placeholder="خيار 1"> <input id="o2" placeholder="خيار 2">
-        <input id="o3" placeholder="خيار 3"> <input id="o4" placeholder="خيار 4">
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px;">
+        <input id="o1" placeholder="1"> <input id="o2" placeholder="2">
+        <input id="o3" placeholder="3"> <input id="o4" placeholder="4">
     </div>
     <input id="qAns" type="number" placeholder="رقم الإجابة (1-4)">
-    <input id="qPts" type="number" placeholder="عدد النقاط">
-    <button onclick="pushQ()" style="background:var(--success); color:white;">انطلاق السؤال 🚀</button>
-    <button onclick="db.ref('liveQuiz').remove(); closeAll();" style="background:#666; color:white;">إغلاق</button>
+    <input id="qPts" type="number" placeholder="النقاط">
+    <button onclick="pushQ()" style="background:var(--success); color:white;">إرسال السؤال 🚀</button>
+    <button onclick="db.ref('liveQuiz').remove(); closeAll();" style="background:#666; color:white;">إنهاء السؤال الحالي</button>
 </div>
 
 <div id="lb" class="footer-lb hidden"></div>
@@ -102,19 +112,21 @@
     }
 
     window.onload = () => {
-        if(localStorage.getItem('rm_name')) { 
-            myN = localStorage.getItem('rm_name'); myT = localStorage.getItem('rm_team'); 
-            entry(true); 
+        const savedN = localStorage.getItem('rm_name');
+        const savedT = localStorage.getItem('rm_team');
+        if(savedN && savedT) {
+            myN = savedN; myT = savedT;
+            entry(true);
         }
     };
 
-    function entry(auto = false) {
-        if(!auto) {
-            myN = document.getElementById('uName').value; myT = document.getElementById('uTeam').value;
-            if(!myN) return alert("الاسم مطلوب");
-            localStorage.setItem('rm_name', myN); localStorage.setItem('rm_team', myT);
-            // تسجيل الاسم في قاعدة البيانات تحت الفريق
-            db.ref(`teamScores/${myT}/members`).push(myN);
+    function entry(isAuto = false) {
+        if(!isAuto) {
+            myN = document.getElementById('uName').value;
+            myT = document.getElementById('uTeam').value;
+            if(!myN) return alert("الرجاء إدخال اسمك");
+            localStorage.setItem('rm_name', myN);
+            localStorage.setItem('rm_team', myT);
         }
         document.getElementById('login').classList.add('hidden');
         document.getElementById('lb').classList.remove('hidden');
@@ -127,102 +139,111 @@
             if(start) {
                 let day = Math.floor((Date.now() - start) / 86400000) + 1;
                 for(let i=1; i<=20; i++) if(i <= day) document.getElementById(`n-${i}`).className = 'node active';
+                if(day >= 21) document.getElementById('hilaal').classList.add('active');
             }
         });
 
         db.ref('teamScores').on('value', snap => {
             const s = snap.val() || {};
             let h = "";
-            let pList = "";
             ["فريق 1", "فريق 2", "فريق 3", "فريق 4"].forEach(t => {
-                const teamData = s[t] || {total: 0, members: {}};
-                h += `<div class="team-s"><b>${t}</b>: ${teamData.total}ن</div>`;
-                
-                // تجهيز قائمة الأسماء للمشرف
-                let members = teamData.members ? Object.values(teamData.members).join('، ') : 'لا يوجد';
-                pList += `<div><b>${t}:</b> <span style="color:#666;">${members}</span></div>`;
+                const dat = s[t] || {total: 0};
+                h += `<div class="team-s"><b>${t}</b><br>${dat.total}ن</div>`;
             });
             document.getElementById('lb').innerHTML = h;
-            if(isAdm) document.getElementById('playersList').innerHTML = pList;
         });
 
         db.ref('liveQuiz').on('value', snap => {
             const lq = snap.val();
-            if(lq) updateQuizUI(lq); else closeAll();
+            if(lq) updateQuizUI(lq);
+            else closeAll();
         });
     }
 
     function updateQuizUI(lq) {
-        if(isAdm) return;
+        if(isAdm) return; 
         document.getElementById('quizPanel').classList.remove('hidden');
         document.getElementById('qDisp').innerText = lq.q.txt;
-        let sec = 30 - Math.floor((Date.now() - lq.start) / 1000);
-        runTimer(sec);
+        
         const btn = document.getElementById('buzBtn');
         const box = document.getElementById('optBox');
+        const msg = document.getElementById('buzMsg');
+
+        let timeLeft = 30 - Math.floor((Date.now() - lq.start) / 1000);
+        runTimer(timeLeft);
+
         if(lq.wrong && lq.wrong[myT]) {
-            document.getElementById('buzMsg').innerText = "❌ أخطأ فريقك!";
+            msg.innerText = "❌ فريقك أخطأ.. انتظر السؤال القادم";
             btn.classList.add('hidden'); box.classList.add('hidden');
         } else if(lq.lock) {
             if(lq.lock === myT) {
-                document.getElementById('buzMsg').innerText = "⭐ دوركم الآن!";
-                btn.classList.add('hidden'); box.classList.remove('hidden');
+                msg.innerText = "⭐ دوركم! أجب بسرعة";
+                btn.classList.remove('hidden'); // إبقاء البازر مخفي أو تحويله لخيارات
+                btn.classList.add('hidden');
+                box.classList.remove('hidden');
                 renderOpts(lq.q);
             } else {
-                document.getElementById('buzMsg').innerText = `⏳ فريق ${lq.lock} يجيب..`;
+                msg.innerText = `⏳ فريق ${lq.lock} يحاول الآن...`;
                 btn.classList.add('hidden'); box.classList.add('hidden');
             }
         } else {
-            document.getElementById('buzMsg').innerText = "⚡ اضغط البازر!";
+            msg.innerText = "⚡ اضغط البازر للإجابة!";
             btn.classList.remove('hidden'); box.classList.add('hidden');
         }
     }
 
-    function hitBuzzer() { db.ref('liveQuiz/lock').transaction(c => (c === null ? myT : undefined)); }
+    function hitBuzzer() {
+        db.ref('liveQuiz/lock').transaction(curr => {
+            if(curr === null) return myT; 
+            return;
+        });
+    }
 
     function renderOpts(q) {
-        const b = document.getElementById('optBox'); b.innerHTML = "";
+        const b = document.getElementById('optBox');
+        b.innerHTML = "";
         q.opts.forEach((o, i) => {
-            let bt = document.createElement('button'); bt.innerText = o;
-            bt.style.background = "#f1f2f6";
+            let bt = document.createElement('button');
+            bt.innerText = o;
             bt.onclick = () => {
                 if(i+1 == q.ans) {
                     confetti();
                     db.ref(`teamScores/${myT}/total`).transaction(s => (s||0) + q.pts);
                     db.ref('liveQuiz').remove();
+                    alert("إبداع! إجابة صحيحة 🎉");
                 } else {
                     db.ref(`liveQuiz/wrong/${myT}`).set(true);
-                    db.ref('liveQuiz/lock').set(null);
+                    db.ref('liveQuiz/lock').set(null); 
+                    alert("للأسف خطأ! ❌");
                 }
             };
             b.appendChild(bt);
         });
     }
 
-    function runTimer(s) {
+    function runTimer(sec) {
         clearInterval(tClock);
+        if(sec <= 0) return;
+        let bar = document.getElementById('tBar');
         tClock = setInterval(() => {
-            s -= 0.1;
-            document.getElementById('tBar').style.width = (s/30)*100 + "%";
-            if(s <= 0) { clearInterval(tClock); if(isAdm) db.ref('liveQuiz').remove(); }
+            sec -= 0.1;
+            bar.style.width = (sec/30)*100 + "%";
+            if(sec <= 0) {
+                clearInterval(tClock);
+                if(isAdm) db.ref('liveQuiz').remove();
+            }
         }, 100);
     }
 
-    function onAdminHit() {
-        hitCount++;
-        if(hitCount >= 6) {
-            if(prompt("كلمة السر:") === "1234") {
-                isAdm = true;
-                document.getElementById('adminPanel').classList.remove('hidden');
-                const pBox = document.getElementById('penaltyButtons'); pBox.innerHTML = "";
-                ["فريق 1", "فريق 2", "فريق 3", "فريق 4"].forEach(t => {
-                    let b = document.createElement('button'); b.innerText = t; b.style.background="#feb2b2"; b.style.fontSize="0.7em";
-                    b.onclick = () => db.ref(`teamScores/${t}/total`).transaction(s => (s||0) - 1);
-                    pBox.appendChild(b);
-                });
-                startSync(); // لتحديث قائمة الأسماء فوراً
-            }
-            hitCount = 0;
+    function openLvl(lvl) {
+        curL = lvl;
+        if(isAdm) {
+            document.getElementById('adminPanel').classList.remove('hidden');
+            document.getElementById('lvlTitle').innerText = lvl;
+        } else {
+            db.ref('liveQuiz').once('value', s => {
+                if(!s.val()) alert("انتظر المشرف ليبدأ هذه المرحلة 🌙");
+            });
         }
     }
 
@@ -233,11 +254,31 @@
             ans: document.getElementById('qAns').value,
             pts: parseInt(document.getElementById('qPts').value) || 2
         };
+        db.ref('config/startDate').once('value', s => { if(!s.val()) db.ref('config/startDate').set(Date.now()); });
         db.ref('liveQuiz').set({ q: q, lock: null, start: Date.now(), wrong: {} });
+        alert("انطلق السؤال!");
     }
 
-    function openLvl(l) { if(isAdm) document.getElementById('lvlTitle').innerText = l; }
-    function closeAll() { document.querySelectorAll('.card').forEach(c => { if(c.id!=='login') c.classList.add('hidden'); }); clearInterval(tClock); }
+    function onAdminHit() {
+        hitCount++;
+        if(hitCount >= 6) {
+            let pass = prompt("كلمة السر:");
+            if(pass === "1234") { 
+                isAdm = true; 
+                document.getElementById('login').classList.add('hidden');
+                document.getElementById('lb').classList.add('hidden');
+                startSync();
+                alert("وضع المشرف مفعّل");
+            }
+            hitCount = 0;
+        }
+    }
+
+    function closeAll() {
+        document.getElementById('quizPanel').classList.add('hidden');
+        document.getElementById('adminPanel').classList.add('hidden');
+        clearInterval(tClock);
+    }
 </script>
 </body>
 </html>
